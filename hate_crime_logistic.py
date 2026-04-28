@@ -2,9 +2,9 @@
 COMP 2200 Final Project - starter file
 Dataset: Documenting Hate data
 
-This is just the first working version.
-It loads the data, makes some simple features, splits train/test,
-and trains logistic regression with numpy.
+This is still an early version.
+It loads the hate crime data, makes some small features,
+then trains a basic logistic regression model using numpy.
 """
 
 import os
@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 np.random.seed(42)
 
 DATA_FILE = "20170816_Documenting_Hate - Data.csv"
+PREVIEW_ROWS = 5
 
 
 # -------------------------------------------------------------------
@@ -28,8 +29,8 @@ def load_hate_data():
     """
     Loads the CSV file and fixes the column names.
 
-    The file header is a little weird, so I rename the columns
-    to match what the rows actually contain.
+    The file header is kind of shifted, so these names match
+    what the columns actually mean in the rows.
     """
     if not os.path.exists(DATA_FILE):
         print("Could not find the dataset file.")
@@ -81,6 +82,30 @@ def print_basic_stats(data):
     print("\nTop 10 organizations:")
     print(data["organization"].replace("", "Missing").value_counts().head(10))
 
+    # TODO: Add date range info, like first article date and last article date.
+    # TODO: Add number of articles per month or per year.
+    # TODO: Add top cities, not only top states.
+    # TODO: Add percent of rows missing city, state, and summary.
+    # TODO: Add a small table showing the most common keyword words.
+
+
+def print_data_preview(data):
+    """
+    Shows a few rows so we can check the dataset before modeling.
+    This is mainly for us while we are still building the project.
+    """
+    print("\n--- Small Data Preview ---")
+
+    cols = ["article_date", "title", "organization", "city", "state"]
+    preview = data[cols].head(PREVIEW_ROWS)
+
+    for i in range(len(preview)):
+        print("\nRow", i + 1)
+        print("Date:", preview.iloc[i]["article_date"])
+        print("Title:", preview.iloc[i]["title"])
+        print("Source:", preview.iloc[i]["organization"])
+        print("Place:", preview.iloc[i]["city"], preview.iloc[i]["state"])
+
 
 # -------------------------------------------------------------------
 # PART 2: Make target label and features
@@ -120,6 +145,25 @@ def make_violent_label(data):
         y.append(found_word)
 
     return np.array(y)
+
+
+def print_label_examples(data, y):
+    """
+    Prints a few examples from each class.
+    This helps us see if the starter label makes sense or not.
+    """
+    print("\n--- Example Rows By Label ---")
+
+    for label in [0, 1]:
+        if label == 0:
+            print("\nExamples labeled 0 (not violent by our simple rule):")
+        else:
+            print("\nExamples labeled 1 (violent by our simple rule):")
+
+        rows = np.where(y == label)[0][:3]
+
+        for row in rows:
+            print("-", data.iloc[row]["title"])
 
 
 def count_words(text):
@@ -186,6 +230,35 @@ def make_features(data):
     return x.astype(float), feature_names
 
 
+def print_feature_summary(x, feature_names):
+    """
+    Prints quick min, max, and average for each feature.
+    It gives the teammate something easy to check next.
+    """
+    print("\n--- Feature Summary ---")
+
+    for i in range(len(feature_names)):
+        print(feature_names[i])
+        print("  min:", round(np.min(x[:, i]), 3))
+        print("  max:", round(np.max(x[:, i]), 3))
+        print("  avg:", round(np.mean(x[:, i]), 3))
+
+
+def print_dataset_todos():
+    """
+    Notes for more dataset exploration.
+    This is here so the next person knows what data info to add next.
+    """
+    print("\n--- TODOs For Showing More Dataset Info ---")
+    print("1. Show the first and last article date in the dataset.")
+    print("2. Show how many articles appear per month or per year.")
+    print("3. Show the top cities, not only the top states.")
+    print("4. Show violent label counts by state.")
+    print("5. Show violent label percentage by state.")
+    print("6. Show the most common words inside the keywords column.")
+    print("7. Show examples of rows with missing city/state so we know how bad it is.")
+
+
 # -------------------------------------------------------------------
 # PART 3: Train-test split and scaling
 # -------------------------------------------------------------------
@@ -216,6 +289,27 @@ def scale_train_test(x_train, x_test):
     x_test_scaled = (x_test - mean) / std
 
     return x_train_scaled, x_test_scaled
+
+
+def print_split_info(x_train, x_test, y_train, y_test):
+    """
+    Shows the split size and the class counts inside each split.
+    """
+    total_rows = len(x_train) + len(x_test)
+
+    print("\nTrain/Test sizes:")
+    print("x_train:", x_train.shape, "x_test:", x_test.shape)
+    print("y_train:", y_train.shape, "y_test:", y_test.shape)
+
+    print("\nSplit percentages:")
+    print("Train:", round(len(x_train) / total_rows, 3))
+    print("Test: ", round(len(x_test) / total_rows, 3))
+
+    print("\nClass counts in train:")
+    print("0:", np.sum(y_train == 0), "1:", np.sum(y_train == 1))
+
+    print("\nClass counts in test:")
+    print("0:", np.sum(y_test == 0), "1:", np.sum(y_test == 1))
 
 
 # -------------------------------------------------------------------
@@ -259,6 +353,13 @@ def train_logistic_regression(x, y, lr=0.05, lmbda=0.0, epochs=1500):
             losses.append(loss)
 
     return weights, bias, losses
+
+
+def predict_probabilities(x, weights, bias):
+    """
+    Small helper so the prediction line is easier to read.
+    """
+    return sigmoid(np.dot(x, weights) + bias)
 
 
 def get_metrics(y_true, y_prob):
@@ -316,12 +417,28 @@ def make_plots(data, y, losses):
 
 
 # -------------------------------------------------------------------
-# PART 6: Run everything
+# PART 6: Notes for the next commit
+# -------------------------------------------------------------------
+def print_next_steps():
+    """
+    Stuff we still need to do after this starter version.
+    """
+    print("\n--- Next Things To Work On ---")
+    print("1. Improve the target label. The word list is only a rough first try.")
+    print("2. Add the extended model, probably logistic regression with L2 regularization.")
+    print("3. Compare baseline vs extended model with accuracy and F1 score.")
+    print("4. Add a confusion matrix plot later.")
+    print("5. Add more dataset description prints from the TODO list.")
+
+
+# -------------------------------------------------------------------
+# PART 7: Run everything
 # -------------------------------------------------------------------
 data = load_hate_data()
 
 if data is not None:
     print_basic_stats(data)
+    print_data_preview(data)
 
     x, feature_names = make_features(data)
     y = make_violent_label(data)
@@ -330,16 +447,19 @@ if data is not None:
     print("Not violent label:", np.sum(y == 0))
     print("Violent label:", np.sum(y == 1))
 
+    print_label_examples(data, y)
+
     print("\nFeatures used:")
     for name in feature_names:
         print("-", name)
 
+    print_feature_summary(x, feature_names)
+    print_dataset_todos()
+
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
     x_train, x_test = scale_train_test(x_train, x_test)
 
-    print("\nTrain/Test sizes:")
-    print("x_train:", x_train.shape, "x_test:", x_test.shape)
-    print("y_train:", y_train.shape, "y_test:", y_test.shape)
+    print_split_info(x_train, x_test, y_train, y_test)
 
     weights, bias, losses = train_logistic_regression(
         x_train,
@@ -349,7 +469,7 @@ if data is not None:
         epochs=1500
     )
 
-    test_probs = sigmoid(np.dot(x_test, weights) + bias)
+    test_probs = predict_probabilities(x_test, weights, bias)
 
     acc, prec, rec, f1, counts = get_metrics(y_test, test_probs)
     tp, tn, fp, fn = counts
@@ -368,3 +488,4 @@ if data is not None:
         print(feature_names[i], ":", round(weights[i], 4))
 
     make_plots(data, y, losses)
+    print_next_steps()
