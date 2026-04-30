@@ -62,49 +62,73 @@ def load_hate_data():
     return data
  
  
+def get_keyword_counts(data):
+    """
+    Gets the keyword word counts.
+    I made this separate so the print part and the graph use the same numbers.
+    """
+    keyword_text = " ".join(data["keywords"].tolist()).lower()
+
+    for ch in [",", ".", ";", ":", "/", "\\", "(", ")", "[", "]", '"', "'"]:
+        keyword_text = keyword_text.replace(ch, " ")
+
+    skip_words = [
+        "the", "and", "for", "with", "from", "that",
+        "this", "are", "was", "were", "into", "after",
+        "about", "over"
+    ]
+
+    words = []
+
+    for word in keyword_text.split():
+        if len(word) > 2 and word not in skip_words:
+            words.append(word)
+
+    return pd.Series(words).value_counts()
+
+
 def print_basic_stats(data):
     """
     Prints simple dataset info so I can understand what I am working with.
     """
     n = data.shape[0]
- 
+
     print("\n--- Dataset Info ---")
     print("Rows:", data.shape[0])
     print("Columns:", data.shape[1])
     print("Column names:")
     print(list(data.columns))
- 
+
     missing_city    = (data["city"] == "").sum()
     missing_state   = (data["state"] == "").sum()
     missing_summary = (data["summary"] == "").sum()
- 
+
     print("\nMissing city:   ", missing_city,   f"({round(100 * missing_city / n, 1)}%)")
     print("Missing state:  ", missing_state,   f"({round(100 * missing_state / n, 1)}%)")
     print("Missing summary:", missing_summary, f"({round(100 * missing_summary / n, 1)}%)")
- 
+
     print("\nTop 10 states:")
     print(data["state"].replace("", "Missing").value_counts().head(10))
- 
+
     print("\nTop 10 organizations:")
     print(data["organization"].replace("", "Missing").value_counts().head(10))
- 
+
     valid_dates = data["article_date"].dropna()
     print("\nFirst article date:", valid_dates.min().date())
     print("Last article date: ", valid_dates.max().date())
- 
+
     print("\nArticles per year:")
     year_counts = data["article_date"].dt.year.value_counts().sort_index()
     for year, count in year_counts.items():
         print(f"  {int(year)}: {count} articles")
- 
+
     print("\nTop 10 cities:")
     print(data["city"].replace("", "Missing").value_counts().head(10))
- 
-    all_keywords = " ".join(data["keywords"].tolist()).lower().split()
+
     print("\nTop 15 most common keyword words:")
-    print(pd.Series(all_keywords).value_counts().head(15))
- 
- 
+    print(get_keyword_counts(data).head(15))
+
+
 def print_data_preview(data):
     """
     Shows a few rows so we can check the dataset before modeling.
@@ -415,6 +439,42 @@ def get_metrics(y_true, y_prob):
 # -------------------------------------------------------------------
 # PART 5: Simple plots
 # -------------------------------------------------------------------
+def plot_top_organizations(data, top_n=10):
+    """
+    Graphs the sources that show up the most in the dataset.
+    This is the same info we print, but easier to use in the report.
+    """
+    counts = data["organization"].replace("", "Missing").value_counts().head(top_n)
+    counts = counts.sort_values()
+
+    plt.figure(figsize=(8, 5))
+    plt.barh(counts.index, counts.values)
+    plt.title("Top 10 Organizations in the Dataset")
+    plt.xlabel("Number of Articles")
+    plt.ylabel("Organization")
+    plt.tight_layout()
+    plt.savefig("plot_top_organizations.png")
+    plt.show()
+
+
+def plot_top_keyword_words(data, top_n=15):
+    """
+    Graphs the most common keyword words.
+    These words help show what topics show up a lot in the dataset.
+    """
+    counts = get_keyword_counts(data).head(top_n)
+    counts = counts.sort_values()
+
+    plt.figure(figsize=(8, 5))
+    plt.barh(counts.index, counts.values)
+    plt.title("Top 15 Keyword Words")
+    plt.xlabel("Number of Times Word Appears")
+    plt.ylabel("Keyword Word")
+    plt.tight_layout()
+    plt.savefig("plot_top_keyword_words.png")
+    plt.show()
+
+
 def make_plots(data, y, losses_b, losses_e):
     """
     Makes plots for the project.
@@ -427,6 +487,10 @@ def make_plots(data, y, losses_b, losses_e):
     plt.tight_layout()
     plt.savefig("plot_top_states.png")
     plt.show()
+
+    plot_top_organizations(data, top_n=10)
+    plot_top_keyword_words(data, top_n=15)
+
  
     plt.figure(figsize=(7, 4))
     labels = ["Not violent label", "Violent label"]
