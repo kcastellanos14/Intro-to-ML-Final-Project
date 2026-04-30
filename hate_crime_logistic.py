@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 np.random.seed(42)
  
 DATA_FILE = "20170816_Documenting_Hate - Data.csv"
-PREVIEW_ROWS = 5
+PREVIEW_ROWS = 9
  
  
 # -------------------------------------------------------------------
